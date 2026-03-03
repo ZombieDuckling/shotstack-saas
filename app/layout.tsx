@@ -7,7 +7,7 @@ import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
 
-export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
+function ThemeProvider({ children, ...props }: ThemeProviderProps) {
   return <NextThemesProvider {...props}>{children}</NextThemesProvider>
 }
 
