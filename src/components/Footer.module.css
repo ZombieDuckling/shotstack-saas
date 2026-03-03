@@ -1,0 +1,44 @@
+.footer {
+  padding: 60px 0;
+  background: var(--darker);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.footerContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.footerLogo {
+  font-size: 24px;
+  font-weight: 800;
+  background: var(--gradient-1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.footerLinks {
+  display: flex;
+  gap: 32px;
+  list-style: none;
+}
+
+.footerLinks a {
+  color: var(--gray-400);
+  text-decoration: none;
+  font-size: 14px;
+  transition: color 0.3s;
+}
+
+.footerLinks a:hover {
+  color: white;
+}
+
+.footerCopy {
+  color: var(--gray-500);
+  font-size: 14px;
+}
