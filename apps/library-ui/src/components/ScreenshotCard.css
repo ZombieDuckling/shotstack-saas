@@ -11,6 +11,11 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
+.screenshot-card:focus-within {
+  outline: none;
+  box-shadow: 0 0 0 2px #3b82f6, 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
 .screenshot-card.grid {
   display: flex;
   flex-direction: column;
@@ -102,8 +107,14 @@
   font-weight: 500;
   cursor: pointer;
   transition: transform 0.1s ease;
+  border: none;
 }
 
 .card-tag:hover {
   transform: scale(1.05);
+}
+
+.card-tag:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
 }

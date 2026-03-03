@@ -28,6 +28,7 @@ export function SearchFilter({
           placeholder="Search screenshots..."
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
+          aria-label="Search screenshots"
         />
         {search && (
           <button
