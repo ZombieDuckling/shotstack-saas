@@ -7,6 +7,7 @@ import {
   FileImage,
   Image,
   Loader2,
+  Tag,
   Upload,
   X,
 } from 'lucide-react'
@@ -17,8 +18,12 @@ import {
 } from '@/lib/library/screenshots'
 import { isSupabaseConfigured } from '@/lib/supabase/client'
 
+const SUGGESTED_TAGS = ['Dashboard', 'Marketing', 'UI', 'Landing', 'Release', 'Feature']
+
 export default function UploadPage() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [tagInput, setTagInput] = useState('')
   const [isDragging, setIsDragging] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [uploaded, setUploaded] = useState<LibraryScreenshot[]>([])
@@ -46,6 +51,25 @@ export default function UploadPage() {
     setSelectedFiles((current) => current.filter((_, currentIndex) => currentIndex !== index))
   }
 
+  function addTag(tag: string) {
+    const trimmed = tag.trim()
+    if (trimmed && !selectedTags.includes(trimmed)) {
+      setSelectedTags((prev) => [...prev, trimmed])
+      setTagInput('')
+    }
+  }
+
+  function removeTag(tag: string) {
+    setSelectedTags((prev) => prev.filter((t) => t !== tag))
+  }
+
+  function handleTagKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      addTag(tagInput)
+    }
+  }
+
   async function handleUpload() {
     if (selectedFiles.length === 0 || isUploading) return
 
@@ -56,7 +80,7 @@ export default function UploadPage() {
     let latestSource: 'supabase' | 'local' = 'local'
 
     for (const file of selectedFiles) {
-      const result = await uploadLibraryScreenshot(file)
+      const result = await uploadLibraryScreenshot(file, selectedTags)
       uploadedItems.push(result.item)
       latestSource = result.source
     }
@@ -64,6 +88,7 @@ export default function UploadPage() {
     setUploaded((current) => [...uploadedItems, ...current])
     setSourceLabel(latestSource)
     setSelectedFiles([])
+    setSelectedTags([])
     setStatusMessage(`Uploaded ${uploadedItems.length} screenshot${uploadedItems.length === 1 ? '' : 's'}.`)
     setIsUploading(false)
   }
@@ -176,6 +201,66 @@ export default function UploadPage() {
             ))}
           </ul>
         )}
+
+        <div className="mt-5">
+          <label className="text-sm font-medium">
+            <Tag className="mr-1.5 inline h-4 w-4" />
+            Tags (optional)
+          </label>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <div className="relative flex-1 min-w-[200px]">
+              <input
+                type="text"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={handleTagKeyDown}
+                placeholder="Add tags..."
+                className="h-9 w-full rounded-md border bg-background px-3 pr-8 text-sm outline-none ring-primary/20 focus:ring-2"
+              />
+              {tagInput && (
+                <button
+                  type="button"
+                  onClick={() => addTag(tagInput)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-primary hover:text-primary/80"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
+          {selectedTags.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {selectedTags.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center rounded-full border bg-muted px-2.5 py-1 text-xs font-medium"
+                >
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => removeTag(tag)}
+                    className="ml-1.5 rounded-full p-0.5 hover:bg-muted-foreground/20"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <span className="text-xs text-muted-foreground">Suggestions:</span>
+            {SUGGESTED_TAGS.filter((t) => !selectedTags.includes(t)).map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => addTag(tag)}
+                className="rounded-full border px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                + {tag}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <button

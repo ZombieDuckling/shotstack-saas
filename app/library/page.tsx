@@ -1,16 +1,21 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
   ArrowRight,
+  Eye,
   Filter,
   Grid3X3,
   List,
+  RefreshCw,
   Search,
+  Trash2,
   Upload,
+  X,
 } from 'lucide-react'
 import {
+  deleteLibraryScreenshot,
   getReadableSource,
   listLibraryScreenshots,
   LibraryScreenshot,
@@ -26,24 +31,84 @@ function formatDate(value: string) {
   })
 }
 
+function ImagePreviewModal({
+  item,
+  onClose,
+}: {
+  item: LibraryScreenshot
+  onClose: () => void
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+      onClick={onClose}
+    >
+      <div className="relative max-w-4xl w-full max-h-[90vh] overflow-auto rounded-xl bg-card">
+        <button
+          onClick={onClose}
+          className="absolute right-2 top-2 z-10 rounded-full bg-black/50 p-2 text-white hover:bg-black/70"
+        >
+          <X className="h-5 w-5" />
+        </button>
+        <img
+          src={item.url}
+          alt={item.name}
+          className="w-full h-auto rounded-xl"
+        />
+        <div className="p-4 border-t">
+          <h3 className="font-semibold">{item.name}</h3>
+          <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+            <span>{formatDate(item.createdAt)}</span>
+            <span>{item.size}</span>
+          </div>
+          {item.tags.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {item.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full border bg-muted px-2 py-0.5 text-xs text-muted-foreground"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function LibraryPage() {
   const [items, setItems] = useState<LibraryScreenshot[]>([])
   const [source, setSource] = useState<'supabase' | 'local'>('local')
   const [loading, setLoading] = useState(true)
+  const [deleting, setDeleting] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [activeTag, setActiveTag] = useState<string>('All')
   const [view, setView] = useState<ViewMode>('grid')
+  const [previewItem, setPreviewItem] = useState<LibraryScreenshot | null>(null)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    const result = await listLibraryScreenshots()
+    setItems(result.items)
+    setSource(result.source)
+    setLoading(false)
+  }, [])
 
   useEffect(() => {
-    async function load() {
-      const result = await listLibraryScreenshots()
-      setItems(result.items)
-      setSource(result.source)
-      setLoading(false)
-    }
-
     load()
-  }, [])
+  }, [load])
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this screenshot?')) return
+    
+    setDeleting(id)
+    await deleteLibraryScreenshot(id)
+    setItems((prev) => prev.filter((item) => item.id !== id))
+    setDeleting(null)
+  }
 
   const tags = useMemo(() => {
     const allTags = new Set<string>()
@@ -80,6 +145,14 @@ export default function LibraryPage() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={load}
+              disabled={loading}
+              className="inline-flex items-center rounded-md border bg-background px-3 py-2 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50"
+            >
+              <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
             <span className="rounded-full border bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
               Data source: {getReadableSource(source)}
             </span>
@@ -178,19 +251,43 @@ export default function LibraryPage() {
           {filteredItems.map((item) => (
             <article
               key={item.id}
-              className={`overflow-hidden rounded-xl border bg-card shadow-sm ${
+              className={`group overflow-hidden rounded-xl border bg-card shadow-sm ${
                 view === 'list' ? 'flex items-center gap-4 p-3' : ''
               }`}
             >
-              <img
-                src={item.thumbnail}
-                alt={item.name}
-                className={`object-cover ${
-                  view === 'grid' ? 'h-48 w-full' : 'h-24 w-36 rounded-lg border'
-                }`}
-              />
+              <div 
+                className={`relative ${view === 'grid' ? 'cursor-pointer' : ''}`}
+                onClick={() => view === 'grid' && setPreviewItem(item)}
+              >
+                <img
+                  src={item.thumbnail}
+                  alt={item.name}
+                  className={`object-cover ${
+                    view === 'grid' ? 'h-48 w-full' : 'h-24 w-36 rounded-lg border'
+                  }`}
+                />
+                {view === 'grid' && (
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Eye className="h-8 w-8 text-white" />
+                  </div>
+                )}
+              </div>
               <div className={view === 'grid' ? 'p-4' : 'min-w-0 flex-1'}>
-                <h3 className="truncate text-sm font-semibold sm:text-base">{item.name}</h3>
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="truncate text-sm font-semibold sm:text-base">{item.name}</h3>
+                  <button
+                    onClick={() => handleDelete(item.id)}
+                    disabled={deleting === item.id}
+                    className="shrink-0 rounded p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                    title="Delete screenshot"
+                  >
+                    {deleting === item.id ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
                 <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                   <span>{formatDate(item.createdAt)}</span>
                   <span>{item.size}</span>
@@ -211,6 +308,10 @@ export default function LibraryPage() {
             </article>
           ))}
         </section>
+      )}
+
+      {previewItem && (
+        <ImagePreviewModal item={previewItem} onClose={() => setPreviewItem(null)} />
       )}
     </main>
   )

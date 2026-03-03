@@ -167,7 +167,7 @@ export async function listLibraryScreenshots(): Promise<LibraryResult> {
   };
 }
 
-export async function uploadLibraryScreenshot(file: File): Promise<{ item: LibraryScreenshot; source: DataSource }> {
+export async function uploadLibraryScreenshot(file: File, tags: string[] = []): Promise<{ item: LibraryScreenshot; source: DataSource }> {
   if (isSupabaseConfigured && supabase) {
     try {
       const filePath = `uploads/${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
@@ -197,8 +197,27 @@ export async function uploadLibraryScreenshot(file: File): Promise<{ item: Libra
 
       if (error) throw error;
 
+      const screenshot = mapSupabaseScreenshot(data);
+      screenshot.tags = tags;
+
+      if (tags.length > 0) {
+        for (const tagName of tags) {
+          const { data: tagData } = await supabase
+            .from('tags')
+            .select('id')
+            .eq('name', tagName)
+            .single();
+          
+          if (tagData) {
+            await supabase
+              .from('screenshot_tags')
+              .insert({ screenshot_id: screenshot.id, tag_id: tagData.id });
+          }
+        }
+      }
+
       return {
-        item: mapSupabaseScreenshot(data),
+        item: screenshot,
         source: 'supabase',
       };
     } catch {
@@ -214,7 +233,7 @@ export async function uploadLibraryScreenshot(file: File): Promise<{ item: Libra
     thumbnail: localUrl,
     size: formatFileSize(file.size),
     createdAt: new Date().toISOString(),
-    tags: ['Upload'],
+    tags: tags.length > 0 ? tags : ['Upload'],
   };
 
   const next = [fallbackItem, ...readLocalScreenshots()];
@@ -224,6 +243,29 @@ export async function uploadLibraryScreenshot(file: File): Promise<{ item: Libra
     item: fallbackItem,
     source: 'local',
   };
+}
+
+export async function deleteLibraryScreenshot(id: string): Promise<{ success: boolean; source: DataSource }> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { error } = await supabase
+        .from('screenshots')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      return { success: true, source: 'supabase' };
+    } catch {
+      // Fall through to local delete
+    }
+  }
+
+  const localItems = readLocalScreenshots();
+  const filtered = localItems.filter((item) => item.id !== id);
+  writeLocalScreenshots(filtered);
+
+  return { success: true, source: 'local' };
 }
 
 export function getReadableSource(source: DataSource) {

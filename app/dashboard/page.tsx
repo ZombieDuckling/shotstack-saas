@@ -1,16 +1,17 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
   Folder,
   Image,
   Library,
   Plus,
+  RefreshCw,
   TrendingUp,
   Upload,
 } from 'lucide-react'
-import { listLibraryScreenshots, LibraryScreenshot } from '@/lib/library/screenshots'
+import { getReadableSource, listLibraryScreenshots, LibraryScreenshot } from '@/lib/library/screenshots'
 
 function fromNow(value: string) {
   const ms = Date.now() - new Date(value).getTime()
@@ -33,19 +34,51 @@ function isToday(value: string) {
   )
 }
 
+function StatCard({
+  label,
+  value,
+  icon: Icon,
+  loading,
+}: {
+  label: string
+  value: string
+  icon: React.ComponentType<{ className?: string }>
+  loading: boolean
+}) {
+  return (
+    <article className="rounded-xl border bg-card p-5 shadow-sm">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Icon className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium">{label}</span>
+        </div>
+        <TrendingUp className="h-3.5 w-3.5 text-green-600" />
+      </div>
+      {loading ? (
+        <div className="mt-4 h-8 w-12 animate-pulse rounded bg-muted" />
+      ) : (
+        <p className="mt-4 text-2xl font-bold">{value}</p>
+      )}
+    </article>
+  )
+}
+
 export default function DashboardPage() {
   const [items, setItems] = useState<LibraryScreenshot[]>([])
   const [loading, setLoading] = useState(true)
+  const [source, setSource] = useState<'supabase' | 'local'>('local')
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    const result = await listLibraryScreenshots()
+    setItems(result.items)
+    setSource(result.source)
+    setLoading(false)
+  }, [])
 
   useEffect(() => {
-    async function load() {
-      const result = await listLibraryScreenshots()
-      setItems(result.items)
-      setLoading(false)
-    }
-
     load()
-  }, [])
+  }, [load])
 
   const stats = useMemo(() => {
     return [
@@ -71,28 +104,29 @@ export default function DashboardPage() {
               Monitor your latest uploads and jump into the library quickly.
             </p>
           </div>
-          <Link
-            href="/upload"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            New Screenshot
-          </Link>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={load}
+              disabled={loading}
+              className="inline-flex items-center justify-center rounded-md border bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50"
+            >
+              <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+            <Link
+              href="/upload"
+              className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              New Screenshot
+            </Link>
+          </div>
         </div>
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
-          <article key={stat.label} className="rounded-xl border bg-card p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <stat.icon className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">{stat.label}</span>
-              </div>
-              <TrendingUp className="h-3.5 w-3.5 text-green-600" />
-            </div>
-            <p className="mt-4 text-2xl font-bold">{loading ? '-' : stat.value}</p>
-          </article>
+          <StatCard key={stat.label} {...stat} loading={loading} />
         ))}
       </section>
 
@@ -100,19 +134,32 @@ export default function DashboardPage() {
         <article className="rounded-xl border bg-card p-6 shadow-sm">
           <h2 className="text-lg font-semibold">Recent Activity</h2>
           {loading ? (
-            <p className="mt-4 text-sm text-muted-foreground">Loading activity...</p>
+            <div className="mt-4 space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-14 animate-pulse rounded-lg bg-muted" />
+              ))}
+            </div>
           ) : recentActivity.length === 0 ? (
-            <p className="mt-4 text-sm text-muted-foreground">No screenshots yet. Upload your first screenshot.</p>
+            <div className="mt-4 text-center">
+              <p className="text-sm text-muted-foreground">No screenshots yet.</p>
+              <Link href="/upload" className="mt-2 inline-block text-sm font-medium text-primary hover:underline">
+                Upload your first screenshot
+              </Link>
+            </div>
           ) : (
             <div className="mt-4 space-y-3">
               {recentActivity.map((item) => (
-                <div key={item.id} className="flex items-center justify-between rounded-lg border bg-background px-3 py-2">
-                  <div>
-                    <p className="text-sm font-medium">{item.name}</p>
+                <Link
+                  key={item.id}
+                  href="/library"
+                  className="flex items-center justify-between rounded-lg border bg-background px-3 py-2 transition-colors hover:bg-muted"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{item.name}</p>
                     <p className="text-xs text-muted-foreground">Uploaded</p>
                   </div>
-                  <span className="text-xs text-muted-foreground">{fromNow(item.createdAt)}</span>
-                </div>
+                  <span className="shrink-0 text-xs text-muted-foreground">{fromNow(item.createdAt)}</span>
+                </Link>
               ))}
             </div>
           )}
@@ -135,6 +182,22 @@ export default function DashboardPage() {
             </Link>
           </div>
         </article>
+      </section>
+
+      <section className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/30">
+        <div className="flex items-center gap-3">
+          <div className="rounded-full bg-amber-100 p-2 dark:bg-amber-900">
+            <Library className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+          </div>
+          <div>
+            <p className="text-sm font-medium">Data Source: {getReadableSource(source)}</p>
+            <p className="text-xs text-muted-foreground">
+              {source === 'supabase'
+                ? 'Connected to Supabase cloud storage.'
+                : 'Using local fallback. Configure Supabase for cloud sync.'}
+            </p>
+          </div>
+        </div>
       </section>
     </div>
   )
