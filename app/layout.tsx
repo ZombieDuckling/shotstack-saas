@@ -1,9 +1,15 @@
+'use client'
+
+import { ThemeProvider as NextThemesProvider } from 'next-themes'
+import type { ThemeProviderProps } from 'next-themes'
 import { Inter } from 'next/font/google'
-import { ThemeProvider } from '@/components/theme-provider'
-import { Navbar } from '@/components/navbar'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
+
+function ThemeProvider({ children, ...props }: ThemeProviderProps) {
+  return <NextThemesProvider {...props}>{children}</NextThemesProvider>
+}
 
 export default function RootLayout({
   children,
@@ -19,10 +25,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <div className="min-h-screen flex flex-col">
-            <Navbar />
-            {children}
-          </div>
+          {children}
         </ThemeProvider>
       </body>
     </html>
