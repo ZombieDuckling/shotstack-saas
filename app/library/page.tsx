@@ -1,4 +1,4 @@
-import { Image } from 'lucide-react'
+import { Image as ImageIcon } from 'lucide-react'
 
 const screenshots = [
   { id: 1, name: 'Screenshot #1284', tags: ['design'], time: '2 min ago' },
@@ -26,7 +26,7 @@ export default function LibraryPage() {
             className="rounded-lg border bg-card p-4 shadow-sm"
           >
             <div className="aspect-video rounded-md bg-muted flex items-center justify-center">
-              <Image className="h-8 w-8 text-muted-foreground" />
+              <ImageIcon className="h-8 w-8 text-muted-foreground" />
             </div>
             <div className="mt-3">
               <p className="font-medium">{screenshot.name}</p>
