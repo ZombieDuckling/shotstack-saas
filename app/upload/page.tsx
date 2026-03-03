@@ -21,6 +21,7 @@ export default function UploadPage() {
         </p>
         <div className="mt-6 flex items-center justify-center gap-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-1">
+            {/* eslint-disable-next-line jsx-a11y/alt-text */}
             <Image className="h-4 w-4" />
             <span>PNG</span>
           </div>

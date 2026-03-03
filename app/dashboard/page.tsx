@@ -67,6 +67,7 @@ export default function DashboardPage() {
               >
                 <div className="flex items-center space-x-3">
                   <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    {/* eslint-disable-next-line jsx-a11y/alt-text */}
                     <Image className="h-4 w-4 text-primary" />
                   </div>
                   <div>
@@ -97,6 +98,7 @@ export default function DashboardPage() {
               className="flex items-center justify-between rounded-lg border p-4 transition-colors hover:bg-accent"
             >
               <div className="flex items-center space-x-3">
+                {/* eslint-disable-next-line jsx-a11y/alt-text */}
                 <Image className="h-5 w-5 text-primary" />
                 <span className="font-medium">View Library</span>
               </div>
