@@ -59,9 +59,23 @@ const screenshotsWithTags = `
   )
 `;
 
+function getSupabase() {
+  if (!supabase) {
+    throw new Error('Supabase client is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.');
+  }
+  return supabase;
+}
+
+function getSupabaseServer() {
+  if (!supabaseServer) {
+    throw new Error('Supabase server client is not configured. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.');
+  }
+  return supabaseServer;
+}
+
 class ScreenshotDal {
   async getAll(): Promise<DbScreenshot[]> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('screenshots')
       .select(screenshotsWithTags)
       .order('created_at', { ascending: false });
@@ -71,7 +85,7 @@ class ScreenshotDal {
   }
 
   async getById(id: string): Promise<DbScreenshot | null> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('screenshots')
       .select(screenshotsWithTags)
       .eq('id', id)
@@ -83,7 +97,7 @@ class ScreenshotDal {
   }
 
   async getByProjectId(projectId: string): Promise<DbScreenshot[]> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('screenshots')
       .select(screenshotsWithTags)
       .eq('project_id', projectId)
@@ -94,7 +108,7 @@ class ScreenshotDal {
   }
 
   async create(input: CreateScreenshotInput): Promise<DbScreenshot> {
-    const { data: screenshot, error } = await supabase
+    const { data: screenshot, error } = await getSupabase()
       .from('screenshots')
       .insert({
         project_id: input.project_id,
@@ -114,7 +128,7 @@ class ScreenshotDal {
         tag_id,
       }));
 
-      const { error: tagError } = await supabase
+      const { error: tagError } = await getSupabase()
         .from('screenshot_tags')
         .insert(tagLinks);
 
@@ -125,7 +139,7 @@ class ScreenshotDal {
   }
 
   async update(id: string, input: Partial<CreateScreenshotInput>): Promise<DbScreenshot> {
-    const { data: screenshot, error } = await supabase
+    const { data: screenshot, error } = await getSupabase()
       .from('screenshots')
       .update({
         project_id: input.project_id,
@@ -142,14 +156,14 @@ class ScreenshotDal {
     if (error) throw error;
 
     if (input.tag_ids !== undefined) {
-      await supabase.from('screenshot_tags').delete().eq('screenshot_id', id);
+      await getSupabase().from('screenshot_tags').delete().eq('screenshot_id', id);
       
       if (input.tag_ids.length > 0) {
         const tagLinks = input.tag_ids.map((tag_id) => ({
           screenshot_id: id,
           tag_id,
         }));
-        await supabase.from('screenshot_tags').insert(tagLinks);
+        await getSupabase().from('screenshot_tags').insert(tagLinks);
       }
     }
 
@@ -157,7 +171,7 @@ class ScreenshotDal {
   }
 
   async delete(id: string): Promise<void> {
-    const { error } = await supabase.from('screenshots').delete().eq('id', id);
+    const { error } = await getSupabase().from('screenshots').delete().eq('id', id);
     if (error) throw error;
   }
 
@@ -174,7 +188,7 @@ class ScreenshotDal {
 
 class TagDal {
   async getAll(): Promise<DbTag[]> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('tags')
       .select('*')
       .order('name');
@@ -184,7 +198,7 @@ class TagDal {
   }
 
   async getById(id: string): Promise<DbTag | null> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('tags')
       .select('*')
       .eq('id', id)
@@ -195,7 +209,7 @@ class TagDal {
   }
 
   async create(input: CreateTagInput): Promise<DbTag> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('tags')
       .insert(input)
       .select()
@@ -206,7 +220,7 @@ class TagDal {
   }
 
   async update(id: string, input: Partial<CreateTagInput>): Promise<DbTag> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('tags')
       .update(input)
       .eq('id', id)
@@ -218,14 +232,14 @@ class TagDal {
   }
 
   async delete(id: string): Promise<void> {
-    const { error } = await supabase.from('tags').delete().eq('id', id);
+    const { error } = await getSupabase().from('tags').delete().eq('id', id);
     if (error) throw error;
   }
 }
 
 class ProjectDal {
   async getAll(): Promise<DbProject[]> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('projects')
       .select('*')
       .order('created_at', { ascending: false });
@@ -235,7 +249,7 @@ class ProjectDal {
   }
 
   async getById(id: string): Promise<DbProject | null> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('projects')
       .select('*')
       .eq('id', id)
@@ -246,7 +260,7 @@ class ProjectDal {
   }
 
   async create(input: CreateProjectInput): Promise<DbProject> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('projects')
       .insert(input)
       .select()
@@ -257,7 +271,7 @@ class ProjectDal {
   }
 
   async update(id: string, input: Partial<CreateProjectInput>): Promise<DbProject> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('projects')
       .update({
         ...input,
@@ -272,7 +286,7 @@ class ProjectDal {
   }
 
   async delete(id: string): Promise<void> {
-    const { error } = await supabase.from('projects').delete().eq('id', id);
+    const { error } = await getSupabase().from('projects').delete().eq('id', id);
     if (error) throw error;
   }
 }
@@ -283,7 +297,7 @@ export const projects = new ProjectDal();
 
 export const serverScreenshots = {
   async getAll() {
-    const { data, error } = await supabaseServer
+    const { data, error } = await getSupabaseServer()
       .from('screenshots')
       .select(screenshotsWithTags)
       .order('created_at', { ascending: false });
@@ -295,7 +309,7 @@ export const serverScreenshots = {
 
 export const serverTags = {
   async getAll() {
-    const { data, error } = await supabaseServer
+    const { data, error } = await getSupabaseServer()
       .from('tags')
       .select('*')
       .order('name');
@@ -307,7 +321,7 @@ export const serverTags = {
 
 export const serverProjects = {
   async getAll() {
-    const { data, error } = await supabaseServer
+    const { data, error } = await getSupabaseServer()
       .from('projects')
       .select('*')
       .order('created_at', { ascending: false });

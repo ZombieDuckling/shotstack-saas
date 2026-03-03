@@ -1,118 +1,141 @@
-import { Image, Download, Eye, Clock, TrendingUp, Plus } from 'lucide-react'
+'use client'
+
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import {
+  Folder,
+  Image,
+  Library,
+  Plus,
+  TrendingUp,
+  Upload,
+} from 'lucide-react'
+import { listLibraryScreenshots, LibraryScreenshot } from '@/lib/library/screenshots'
 
-const stats = [
-  { label: 'Total Screenshots', value: '1,284', icon: Image, change: '+12%' },
-  { label: 'Total Downloads', value: '8,521', icon: Download, change: '+8%' },
-  { label: 'Total Views', value: '24,892', icon: Eye, change: '+23%' },
-  { label: 'Storage Used', value: '4.2 GB', icon: Clock, change: '+5%' },
-]
+function fromNow(value: string) {
+  const ms = Date.now() - new Date(value).getTime()
+  const minutes = Math.floor(ms / (1000 * 60))
+  if (minutes < 1) return 'just now'
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  return `${days}d ago`
+}
 
-const recentActivity = [
-  { id: 1, title: 'Screenshot #1284', action: 'Uploaded', time: '2 minutes ago' },
-  { id: 2, title: 'Screenshot #1283', action: 'Downloaded', time: '15 minutes ago' },
-  { id: 3, title: 'Screenshot #1282', action: 'Viewed', time: '1 hour ago' },
-  { id: 4, title: 'Screenshot #1281', action: 'Uploaded', time: '3 hours ago' },
-  { id: 5, title: 'Screenshot #1280', action: 'Downloaded', time: '5 hours ago' },
-]
+function isToday(value: string) {
+  const date = new Date(value)
+  const now = new Date()
+  return (
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate()
+  )
+}
 
 export default function DashboardPage() {
+  const [items, setItems] = useState<LibraryScreenshot[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function load() {
+      const result = await listLibraryScreenshots()
+      setItems(result.items)
+      setLoading(false)
+    }
+
+    load()
+  }, [])
+
+  const stats = useMemo(() => {
+    return [
+      { label: 'Library Assets', value: String(items.length), icon: Library },
+      { label: 'Uploaded This Week', value: String(items.slice(0, 7).length), icon: Upload },
+      { label: 'Tagged Items', value: String(items.filter((item) => item.tags.length > 0).length), icon: Folder },
+      { label: 'New Today', value: String(items.filter((item) => isToday(item.createdAt)).length), icon: Image },
+    ]
+  }, [items])
+
+  const recentActivity = useMemo(() => {
+    return items.slice(0, 5)
+  }, [items])
+
   return (
     <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">
-            Welcome back! Here&apos;s an overview of your screenshots.
-          </p>
-        </div>
-        <Link
-          href="/upload"
-          className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          New Screenshot
-        </Link>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => (
-          <div
-            key={stat.label}
-            className="rounded-lg border bg-card p-6 shadow-sm"
+      <section className="rounded-2xl border bg-card p-6 shadow-sm">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-wide text-primary">Dashboard</p>
+            <h1 className="mt-1 text-3xl font-bold tracking-tight">Team Screenshot Workspace</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Monitor your latest uploads and jump into the library quickly.
+            </p>
+          </div>
+          <Link
+            href="/upload"
+            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
           >
-            <div className="flex items-center justify-between space-x-4">
-              <div className="flex items-center space-x-2">
+            <Plus className="mr-2 h-4 w-4" />
+            New Screenshot
+          </Link>
+        </div>
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {stats.map((stat) => (
+          <article key={stat.label} className="rounded-xl border bg-card p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
                 <stat.icon className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium">{stat.label}</span>
               </div>
-              <div className="flex items-center text-xs text-green-600">
-                <TrendingUp className="mr-1 h-3 w-3" />
-                {stat.change}
-              </div>
+              <TrendingUp className="h-3.5 w-3.5 text-green-600" />
             </div>
-            <div className="mt-4 text-2xl font-bold">{stat.value}</div>
-          </div>
+            <p className="mt-4 text-2xl font-bold">{loading ? '-' : stat.value}</p>
+          </article>
         ))}
-      </div>
+      </section>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-lg border bg-card p-6 shadow-sm">
+      <section className="grid gap-4 lg:grid-cols-2">
+        <article className="rounded-xl border bg-card p-6 shadow-sm">
           <h2 className="text-lg font-semibold">Recent Activity</h2>
-          <div className="mt-4 space-y-4">
-            {recentActivity.map((activity) => (
-              <div
-                key={activity.id}
-                className="flex items-center justify-between border-b pb-3 last:border-0 last:pb-0"
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Image className="h-4 w-4 text-primary" />
-                  </div>
+          {loading ? (
+            <p className="mt-4 text-sm text-muted-foreground">Loading activity...</p>
+          ) : recentActivity.length === 0 ? (
+            <p className="mt-4 text-sm text-muted-foreground">No screenshots yet. Upload your first screenshot.</p>
+          ) : (
+            <div className="mt-4 space-y-3">
+              {recentActivity.map((item) => (
+                <div key={item.id} className="flex items-center justify-between rounded-lg border bg-background px-3 py-2">
                   <div>
-                    <p className="text-sm font-medium">{activity.title}</p>
-                    <p className="text-xs text-muted-foreground">{activity.action}</p>
+                    <p className="text-sm font-medium">{item.name}</p>
+                    <p className="text-xs text-muted-foreground">Uploaded</p>
                   </div>
+                  <span className="text-xs text-muted-foreground">{fromNow(item.createdAt)}</span>
                 </div>
-                <span className="text-xs text-muted-foreground">{activity.time}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+              ))}
+            </div>
+          )}
+        </article>
 
-        <div className="rounded-lg border bg-card p-6 shadow-sm">
+        <article className="rounded-xl border bg-card p-6 shadow-sm">
           <h2 className="text-lg font-semibold">Quick Actions</h2>
           <div className="mt-4 grid gap-3">
-            <Link
-              href="/upload"
-              className="flex items-center justify-between rounded-lg border p-4 transition-colors hover:bg-accent"
-            >
-              <div className="flex items-center space-x-3">
-                <Plus className="h-5 w-5 text-primary" />
-                <span className="font-medium">Upload Screenshot</span>
-              </div>
+            <Link href="/upload" className="rounded-lg border p-4 transition-colors hover:bg-accent">
+              <p className="text-sm font-medium">Upload Screenshot</p>
+              <p className="mt-1 text-xs text-muted-foreground">Add new product captures to your workspace.</p>
             </Link>
-            <Link
-              href="/library"
-              className="flex items-center justify-between rounded-lg border p-4 transition-colors hover:bg-accent"
-            >
-              <div className="flex items-center space-x-3">
-                <Image className="h-5 w-5 text-primary" />
-                <span className="font-medium">View Library</span>
-              </div>
+            <Link href="/library" className="rounded-lg border p-4 transition-colors hover:bg-accent">
+              <p className="text-sm font-medium">Browse Library</p>
+              <p className="mt-1 text-xs text-muted-foreground">Search and filter screenshots by tags and titles.</p>
             </Link>
-            <Link
-              href="/settings"
-              className="flex items-center justify-between rounded-lg border p-4 transition-colors hover:bg-accent"
-            >
-              <div className="flex items-center space-x-3">
-                <Download className="h-5 w-5 text-primary" />
-                <span className="font-medium">Export All</span>
-              </div>
+            <Link href="/pricing" className="rounded-lg border p-4 transition-colors hover:bg-accent">
+              <p className="text-sm font-medium">View Plans</p>
+              <p className="mt-1 text-xs text-muted-foreground">Compare usage limits and subscription options.</p>
             </Link>
           </div>
-        </div>
-      </div>
+        </article>
+      </section>
     </div>
   )
 }

@@ -1,5 +1,7 @@
 export { supabase } from './client';
+export { isSupabaseConfigured } from './client';
 export { supabaseServer } from './server';
+export { isSupabaseServerConfigured } from './server';
 export {
   screenshots,
   tags,
