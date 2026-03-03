@@ -34,14 +34,15 @@ export function ScreenshotCard({ screenshot, viewMode, onTagClick }: ScreenshotC
         </div>
         <div className="card-tags">
           {screenshot.tags.map((tag) => (
-            <span
+            <button
               key={tag.id}
               className="card-tag"
               style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
               onClick={() => onTagClick?.(tag.id)}
+              aria-label={`Filter by ${tag.name}`}
             >
               {tag.name}
-            </span>
+            </button>
           ))}
         </div>
       </div>

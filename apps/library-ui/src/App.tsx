@@ -12,18 +12,23 @@ function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [search, setSearch] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleUpload = (file: File) => {
-    const newScreenshot: Screenshot = {
-      id: String(Date.now()),
-      name: file.name.replace(/\.[^/.]+$/, ''),
-      url: URL.createObjectURL(file),
-      thumbnail: URL.createObjectURL(file),
-      tags: [],
-      createdAt: new Date(),
-      size: `${(file.size / 1024).toFixed(0)} KB`,
-    };
-    setScreenshots((prev) => [newScreenshot, ...prev]);
+    setIsLoading(true);
+    setTimeout(() => {
+      const newScreenshot: Screenshot = {
+        id: String(Date.now()),
+        name: file.name.replace(/\.[^/.]+$/, ''),
+        url: URL.createObjectURL(file),
+        thumbnail: URL.createObjectURL(file),
+        tags: [],
+        createdAt: new Date(),
+        size: `${(file.size / 1024).toFixed(0)} KB`,
+      };
+      setScreenshots((prev) => [newScreenshot, ...prev]);
+      setIsLoading(false);
+    }, 500);
   };
 
   const handleTagToggle = (tagId: string) => {
@@ -61,6 +66,9 @@ function App() {
           <span className="screenshot-count">
             {filteredScreenshots.length} {filteredScreenshots.length === 1 ? 'screenshot' : 'screenshots'}
           </span>
+          <span className="visually-hidden" aria-live="polite">
+            Showing {filteredScreenshots.length} {filteredScreenshots.length === 1 ? 'screenshot' : 'screenshots'}
+          </span>
         </div>
       </header>
 
@@ -82,6 +90,8 @@ function App() {
           screenshots={filteredScreenshots}
           viewMode={viewMode}
           onTagClick={handleTagToggle}
+          isLoading={isLoading}
+          hasFilters={search !== '' || selectedTags.length > 0}
         />
       </main>
     </div>
