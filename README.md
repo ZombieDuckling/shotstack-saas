@@ -27,22 +27,27 @@ ShotStack is a SaaS application that allows users to upload, organize, manage, a
 
 ```
 shotstack-saas/
-├── app/                    # Next.js App Router pages
-│   ├── dashboard/          # Dashboard page
-│   ├── upload/             # Upload page
-│   ├── library/            # Library page (redirects to library-ui)
-│   ├── layout.tsx         # Root layout with theme provider
-│   └── page.tsx           # Home page (redirects to dashboard)
-├── components/             # Shared React components
-│   ├── navbar.tsx         # Navigation bar
-│   └── sidebar.tsx        # Sidebar navigation
-├── apps/
-│   └── library-ui/        # Standalone Vite React app for library
-├── public/                # Static assets
-├── docs/                  # Documentation
-├── package.json           # Root package config
-├── next.config.js         # Next.js configuration
-└── tailwind.config.js     # Tailwind CSS configuration
+├── app/                    # Next.js App Router pages + API routes
+│   ├── dashboard/          # Metrics + launch control center
+│   ├── upload/             # Upload flow (Supabase + local fallback)
+│   ├── library/            # Screenshot library with delete support
+│   ├── pricing/            # Plan and checkout entrypoint
+│   ├── auth/               # Supabase auth callback route
+│   ├── api/                # Checkout + Stripe webhook scaffolding
+│   ├── layout.tsx          # Root layout + nav shell
+│   └── page.tsx            # Marketing/launch home
+├── components/             # Shared UI components
+│   ├── navbar.tsx          # Top navigation and auth state
+│   ├── sidebar.tsx         # App navigation
+│   └── theme-provider.tsx  # Theme handling
+├── lib/
+│   ├── supabase/           # Browser/server clients and helpers
+│   ├── library/            # Screenshot data access layer
+│   └── billing/            # Plan metadata + pricing utils
+├── middleware.ts           # Auth guards for protected routes
+├── docs/                   # Setup/deploy architecture docs
+├── package.json            # Scripts and dependencies
+└── tailwind.config.cjs     # Tailwind CSS configuration
 ```
 
 ## Getting Started
