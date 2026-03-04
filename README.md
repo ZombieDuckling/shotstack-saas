@@ -109,6 +109,25 @@ See the [Deployment Runbook](./docs/deployment-runbook.md) for detailed instruct
 - [Environment Variables](./docs/environment-variables.md)
 - [Deployment Runbook](./docs/deployment-runbook.md)
 
+## Project status
+
+This project is marked as **finished for now** as of March 4, 2026.
+The core MVP flow is in place:
+
+- `/`, `/dashboard`, `/upload`, `/pricing`, and `/library` routes are live
+- Supabase integration is wired with setup docs
+- Stripe checkout and webhook scaffolding are present
+- `dev` branch is build-clean and ready to resume when needed
+
+## Next steps
+
+When work resumes, prioritize production hardening:
+
+1. Add end-to-end tests for upload, auth, and checkout flows.
+2. Connect real Stripe products, prices, and webhook secrets.
+3. Add monitoring, error tracking, and backup/restore checks.
+4. Complete release checklist and merge `dev` to `main`.
+
 ## License
 
 MIT
