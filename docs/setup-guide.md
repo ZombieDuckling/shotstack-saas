@@ -71,38 +71,51 @@ See [Environment Variables](./environment-variables.md) for detailed configurati
 ### Database Schema (Expected)
 
 ```sql
--- Screenshots table
-CREATE TABLE screenshots (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES auth.users(id),
-  title TEXT NOT NULL,
-  description TEXT,
-  image_url TEXT NOT NULL,
-  thumbnail_url TEXT,
-  file_size INTEGER,
-  width INTEGER,
-  height INTEGER,
-  tags TEXT[],
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+-- Core screenshot records (used by lib/library/screenshots.ts)
+create table if not exists public.screenshots (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete set null,
+  name text not null,
+  url text not null,
+  thumbnail text,
+  size text,
+  created_at timestamptz not null default now()
 );
 
--- Enable RLS
-ALTER TABLE screenshots ENABLE ROW LEVEL SECURITY;
+-- Optional tagging support
+create table if not exists public.tags (
+  id uuid primary key default gen_random_uuid(),
+  name text unique not null
+);
 
--- Create policies
-CREATE POLICY "Users can view own screenshots" ON screenshots
-  FOR SELECT USING (auth.uid() = user_id);
+create table if not exists public.screenshot_tags (
+  screenshot_id uuid references public.screenshots(id) on delete cascade,
+  tag_id uuid references public.tags(id) on delete cascade,
+  primary key (screenshot_id, tag_id)
+);
 
-CREATE POLICY "Users can insert own screenshots" ON screenshots
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
+alter table public.screenshots enable row level security;
+alter table public.tags enable row level security;
+alter table public.screenshot_tags enable row level security;
 
-CREATE POLICY "Users can update own screenshots" ON screenshots
-  FOR UPDATE USING (auth.uid() = user_id);
+-- Minimal policies (adjust for your multi-tenant rules)
+create policy "read screenshots" on public.screenshots
+for select using (auth.uid() is not null);
 
-CREATE POLICY "Users can delete own screenshots" ON screenshots
-  FOR DELETE USING (auth.uid() = user_id);
+create policy "insert screenshots" on public.screenshots
+for insert with check (auth.uid() is not null);
+
+create policy "delete screenshots" on public.screenshots
+for delete using (auth.uid() is not null);
 ```
+
+### Storage Bucket
+
+Create a public bucket named `screenshots` in Supabase Storage.
+
+- Path pattern used by app: `uploads/<timestamp>-<filename>`
+- If storage/table setup is incomplete, app automatically falls back to local browser storage for dev previews.
+
 
 ## Step 5: Run Development Server
 
